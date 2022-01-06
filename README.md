@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+## 验证问题
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+在此处手动修改counter的值会不会触发Person组件的更新？
+Person内部的counter属性是从redux中获取的
+见代码
 
-## Available Scripts
+about组件
+```
+import React, {useState, useEffect} from 'react';
+import {useParams, Link} from 'react-router-dom';
+import { connect } from 'react-redux';
+import Person from './person';
 
-In the project directory, you can run:
+const About = (props) => {
+    const {id} = useParams('id');
+    const [name, setName] = useState('mike');
 
-### `npm start`
+    useEffect(() => {
+        // setName(name + '1')
+        props.dispatch({
+            type: 'INCREMENT'
+        });
+    }, [id]);
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+    return (<div>about
+        <br />
+        跳转到<Link to="/about/2222">about1</Link>
+        <br />
+        跳转到<Link to="/about/3333">about2</Link>
+        <br />
+        跳转到<Link to="/about/4444">about3</Link>
+        <br />
+        跳转到<Link to="/about/5555">about4</Link>
+        // 在此处手动修改counter的值会不会触发Person组件的更新？
+        // Person内部的counter属性是从redux中获取的
+        <Person id={id} name={name} counter={Math.random()} /></div>);
+};
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+export default connect(state => {
+    return {
+        counter: state
+    };
+}, (dispatch) => {
+    return {
+        dispatch
+    };
+})(About);
+```
 
-### `npm test`
+person组件
+```
+import React from 'react';
+import { connect } from 'react-redux';
+// import PersonContent from './personContent';
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+const Person = (props) => {
+    const {id, name, counter, dispatch} = props;
+    console.log(props);
+    console.log('person render');
 
-### `npm run build`
+    const handleClick = () => {
+        dispatch({
+            type: 'INCREMENT'
+        });
+    };
+    return (<div>{id}
+        计数器：{counter}<br />
+        <button onClick={handleClick}>点击计算</button>
+    </div>);
+};
+// counter 是从redux里面获取
+// 尝试在外层组件里面手动修改counter的值 看是否能触发更新
+// 结论是：并不会。外层传过来的connter并不是覆盖redux中的counter，内部的counter
+export default connect(state => {
+    return {
+        counter: state
+    };
+}, (dispatch) => {
+    return {
+        dispatch
+    };
+})(Person);
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 结论
+不会 外面手动传的counter会在connect里面被替换成redux里面的counter
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+替换大概是这样
+```
+connect = (mapStateToProps, mapDispatchToProps) => (Component) => (props) => {
+    // mapStateToProps写在后面会替换props中的属性
+    return (<Component {...props} {...mapStateToProps}/>);
+};
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+有空看看react-redux代码

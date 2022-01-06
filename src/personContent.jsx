@@ -13,3 +13,5 @@ class PersonContent extends React.Component {
         </div>);
     }
 };
+
+export default PersonContent;
